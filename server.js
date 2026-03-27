@@ -15,33 +15,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 const placeholder =
   'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Reuters_Logo.svg/200px-Reuters_Logo.svg.png';
 
-// ================================
-// Helper: Follow redirects (e.g., Google News → Reuters)
-// ================================
-async function resolveFinalURL(url) {
-  try {
-    const res = await axios.get(url, {
-      maxRedirects: 5,
-      timeout: 5000,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
-      }
-    });
-    return res.request.res.responseUrl || url;
-  } catch (err) {
-    console.warn(`⚠️ Redirect failed for ${url}: ${err.message}`);
-    return url;
-  }
-}
+// Home route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // ================================
-// Helper: Extract og:image
+// Helper: Extract best image
 // ================================
 async function fetchOGImage(url) {
   try {
     const { data } = await axios.get(url, {
-      timeout: 5000,
+      timeout: 4000,
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
@@ -49,23 +34,29 @@ async function fetchOGImage(url) {
     });
 
     const $ = cheerio.load(data);
-    const ogImg = $('meta[property="og:image"]').attr('content');
-    const fallbackImg = $('article img').first().attr('src');
 
-    return ogImg || fallbackImg || placeholder;
+    const candidates = [
+      $('meta[property="og:image"]').attr('content'),
+      $('meta[name="twitter:image"]').attr('content'),
+      $('article img').first().attr('src'),
+      $('img').first().attr('src')
+    ];
+
+    const img = candidates.find(src => src && src.startsWith('http'));
+    return img || placeholder;
   } catch (err) {
-    console.warn(`⚠️ Failed to fetch OG image for ${url}: ${err.message}`);
+    console.warn(`⚠️ Failed image fetch for ${url}: ${err.message}`);
     return placeholder;
   }
 }
 
 // ================================
-// Wired Scraper (Web)
+// Wired
 // ================================
 async function scrapeWired() {
   try {
-    const url = 'https://www.wired.com';
-    const { data } = await axios.get(url);
+    const baseUrl = 'https://www.wired.com';
+    const { data } = await axios.get(baseUrl, { timeout: 5000 });
     const $ = cheerio.load(data);
 
     const articles = [];
@@ -73,7 +64,9 @@ async function scrapeWired() {
     $('a.summary-item__hed-link').each((_, el) => {
       const title = $(el).text().trim();
       const href = $(el).attr('href');
-      const link = href.startsWith('http') ? href : url + href;
+      if (!title || !href) return;
+
+      const link = href.startsWith('http') ? href : `${baseUrl}${href}`;
       const img = $(el).closest('.summary-item').find('img').attr('src');
 
       articles.push({
@@ -93,20 +86,23 @@ async function scrapeWired() {
 }
 
 // ================================
-// BBC Scraper (RSS + og:image fallback)
+// BBC
 // ================================
 async function scrapeBBC() {
   try {
     const feed = await parser.parseURL('https://feeds.bbci.co.uk/news/rss.xml');
 
-    const articles = await Promise.all(feed.items.map(async item => ({
-      source: 'BBC',
-      title: item.title,
-      link: item.link,
-      thumbnail: item.enclosure?.url ||
-                 item['media:thumbnail']?.url ||
-                 await fetchOGImage(item.link)
-    })));
+    const articles = await Promise.all(
+      feed.items.slice(0, 15).map(async item => ({
+        source: 'BBC',
+        title: item.title,
+        link: item.link,
+        thumbnail:
+          item.enclosure?.url ||
+          item['media:thumbnail']?.url ||
+          await fetchOGImage(item.link)
+      }))
+    );
 
     console.log('📰 BBC:', articles.length);
     return articles;
@@ -117,20 +113,23 @@ async function scrapeBBC() {
 }
 
 // ================================
-// CNET Scraper (RSS + og:image fallback)
+// CNET
 // ================================
 async function scrapeCNET() {
   try {
     const feed = await parser.parseURL('https://www.cnet.com/rss/news/');
 
-    const articles = await Promise.all(feed.items.map(async item => ({
-      source: 'CNET',
-      title: item.title,
-      link: item.link,
-      thumbnail: item.enclosure?.url ||
-                 item['media:thumbnail']?.url ||
-                 await fetchOGImage(item.link)
-    })));
+    const articles = await Promise.all(
+      feed.items.slice(0, 15).map(async item => ({
+        source: 'CNET',
+        title: item.title,
+        link: item.link,
+        thumbnail:
+          item.enclosure?.url ||
+          item['media:thumbnail']?.url ||
+          await fetchOGImage(item.link)
+      }))
+    );
 
     console.log('📰 CNET:', articles.length);
     return articles;
@@ -141,77 +140,66 @@ async function scrapeCNET() {
 }
 
 // ================================
-// Reuters Scraper (NewsData.io API + og:image fallback)
+// Reuters (lightweight API version)
 // ================================
 async function scrapeReuters() {
   const API_KEY = 'pub_60c0bd2f19914b6485ed5fa4161a4503';
-
   const url = `https://newsdata.io/api/1/news?apikey=${API_KEY}&q=reuters&language=en`;
 
   try {
-    const { data } = await axios.get(url);
+    const { data } = await axios.get(url, { timeout: 5000 });
 
-    console.log('🧪 Reuters raw results:', data.results?.length || 0);
+    console.log('🧪 Reuters raw results:', data?.results?.length || 0);
 
     if (!data.results || data.results.length === 0) {
       console.warn('⚠️ Reuters returned ZERO articles');
       return [];
     }
 
-    const articles = await Promise.all(
-      data.results.map(async article => {
-        if (!article.link) return null;
+    const articles = data.results.slice(0, 10).map(article => ({
+      source: 'Reuters',
+      title: article.title,
+      link: article.link || '#',
+      thumbnail:
+        article.image_url && article.image_url.startsWith('http')
+          ? article.image_url
+          : placeholder
+    }));
 
-        const finalUrl = await resolveFinalURL(article.link);
-
-        let img = article.image_url;
-        if (!img || !img.startsWith('http')) {
-          img = await fetchOGImage(finalUrl);
-        }
-
-        return {
-          source: 'Reuters',
-          title: article.title,
-          link: finalUrl,
-          thumbnail: img || placeholder
-        };
-      })
-    );
-
-    const clean = articles.filter(Boolean);
-    console.log('📰 Reuters:', clean.length);
-    return clean;
+    console.log('📰 Reuters:', articles.length);
+    return articles;
   } catch (err) {
-    console.error(
-      '❌ Reuters API error:',
-      err.response?.data || err.message
-    );
+    console.error('❌ Reuters API error:', err.response?.data || err.message);
     return [];
   }
 }
 
-
 // ================================
 // API Route
 // ================================
-app.get('/api/scrape', async (_, res) => {
-  const results = await Promise.allSettled([
-    scrapeWired(),
-    scrapeBBC(),
-    scrapeCNET(),
-    scrapeReuters()
-  ]);
+app.get('/api/scrape', async (req, res) => {
+  try {
+    const results = await Promise.allSettled([
+      scrapeWired(),
+      scrapeBBC(),
+      scrapeCNET(),
+      scrapeReuters()
+    ]);
 
-  const articles = results
-    .filter(r => r.status === 'fulfilled')
-    .flatMap(r => r.value);
+    const articles = results
+      .filter(result => result.status === 'fulfilled')
+      .flatMap(result => result.value);
 
-  res.json(articles);
+    res.json(articles);
+  } catch (err) {
+    console.error('❌ API scrape error:', err.message);
+    res.status(500).json({ error: 'Scraping failed.' });
+  }
 });
 
 // ================================
-// Start Server
+// Start server
 // ================================
 app.listen(port, () => {
-  console.log(`🧠 Scraper running → http://localhost:${port}/api/scrape`);
+  console.log(`🧠 Scraper running → http://localhost:${port}`);
 });
