@@ -146,7 +146,6 @@ async function scrapeCNET() {
 async function scrapeReuters() {
   const API_KEY = 'pub_60c0bd2f19914b6485ed5fa4161a4503';
 
-  // ✅ FREE-TIER SAFE QUERY
   const url = `https://newsdata.io/api/1/news?apikey=${API_KEY}&q=reuters&language=en`;
 
   try {
@@ -174,7 +173,7 @@ async function scrapeReuters() {
           source: 'Reuters',
           title: article.title,
           link: finalUrl,
-          thumbnail: img || PLACEHOLDER
+          thumbnail: img || placeholder
         };
       })
     );
