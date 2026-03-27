@@ -3,11 +3,14 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
 const Parser = require('rss-parser');
+const path = require('path');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const parser = new Parser();
+
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
 
 const placeholder =
   'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Reuters_Logo.svg/200px-Reuters_Logo.svg.png';
