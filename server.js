@@ -175,6 +175,25 @@ async function scrapeReuters() {
 }
 
 // ================================
+// Reddit
+// ================================
+async function scrapeRedditUFO() {
+  try {
+    const feed = await parser.parseURL('https://www.reddit.com/r/UFOs/.rss');
+
+    return feed.items.slice(0, 10).map(item => ({
+      source: 'Reddit UFOs',
+      title: item.title,
+      link: item.link,
+      thumbnail: 'https://www.redditstatic.com/icon.png'
+    }));
+  } catch (err) {
+    console.error('Reddit UFO error:', err.message);
+    return [];
+  }
+}
+
+// ================================
 // API Route
 // ================================
 app.get('/api/scrape', async (req, res) => {
@@ -183,7 +202,9 @@ app.get('/api/scrape', async (req, res) => {
       scrapeWired(),
       scrapeBBC(),
       scrapeCNET(),
-      scrapeReuters()
+      scrapeReuters(),
+      scrapeRedditUFO(),
+
     ]);
 
     const articles = results
