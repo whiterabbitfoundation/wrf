@@ -3,317 +3,490 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>News Aggregator</title>
-
+  <title>White Rabbit Foundation</title>
   <style>
-    :root{
-      --bg: #f7f7f8;
-      --text: #111;
-      --muted: #666;
-      --card: #ffffff;
-      --border: rgba(0,0,0,0.08);
-      --shadow: 0 6px 18px rgba(0,0,0,0.08);
-      --link: #0b66ff;
-      --btn: #111;
-      --btnText: #fff;
-      --chip: rgba(0,0,0,0.06);
+    :root {
+      --bg: #0a0d10;
+      --panel: #11161c;
+      --panel-2: #151c24;
+      --border: rgba(255,255,255,0.08);
+      --text: #e8edf2;
+      --muted: #8d98a5;
+      --accent: #d9e2ec;
+      --alert: #8ee6ff;
+      --danger: #ff5c5c;
+      --shadow: 0 10px 30px rgba(0,0,0,0.35);
     }
 
-    body.dark{
-      --bg: #0b0f14;
-      --text: #e7eaf0;
-      --muted: #a8b0bd;
-      --card: #121826;
-      --border: rgba(255,255,255,0.10);
-      --shadow: 0 10px 24px rgba(0,0,0,0.45);
-      --link: #7db3ff;
-      --btn: #e7eaf0;
-      --btnText: #0b0f14;
-      --chip: rgba(255,255,255,0.08);
+    * {
+      box-sizing: border-box;
     }
 
-    * { box-sizing: border-box; }
-    body{
-      margin:0;
+    body {
+      margin: 0;
       font-family: Arial, sans-serif;
-      background: var(--bg);
+      background: linear-gradient(to bottom, #090c10, #0d1117);
       color: var(--text);
     }
 
-    header{
+    header {
       position: sticky;
-      top:0;
-      z-index: 50;
-      background: var(--bg);
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 13, 16, 0.95);
+      backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
-      padding: 14px 16px;
     }
 
-    .topbar{
-      max-width: 1200px;
+    .topbar {
+      max-width: 1400px;
       margin: 0 auto;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-
-    .brand h1{
-      font-size: 18px;
-      margin:0;
-      letter-spacing: 0.2px;
-    }
-
-    .controls{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-
-    .btn{
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      padding: 9px 12px;
-      border-radius: 10px;
-      cursor:pointer;
-      box-shadow: none;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-weight: 600;
-    }
-    .btn:hover{ filter: brightness(0.98); }
-
-    .toggle{
-      border: none;
-      background: var(--btn);
-      color: var(--btnText);
-      padding: 9px 12px;
-      border-radius: 10px;
-      cursor:pointer;
-      font-weight: 700;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    main{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    .status{
-      padding: 10px 12px;
-      background: var(--chip);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      color: var(--muted);
-      margin-bottom: 14px;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       gap: 16px;
     }
 
-    .card{
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow:hidden;
-      box-shadow: var(--shadow);
-      display:flex;
+    .brand {
+      display: flex;
       flex-direction: column;
-      min-height: 320px;
+      gap: 2px;
     }
 
-    .thumb{
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      background: var(--chip);
-    }
-
-    .content{
-      padding: 12px 12px 14px;
-      display:flex;
-      flex-direction: column;
-      gap: 10px;
-      flex: 1;
-    }
-
-    .source{
-      display:inline-flex;
-      align-items:center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      width: 280px;
+      max-width: 100%;
+      padding: 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: var(--muted);
+    }
+
+    .btn {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
       letter-spacing: 0.6px;
     }
 
-    .title{
-      font-size: 15px;
-      font-weight: 800;
-      line-height: 1.25;
-      margin:0;
+    .layout {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 20px;
     }
 
-    .title a{
-      color: var(--text);
-      text-decoration: none;
-    }
-    .title a:hover{
-      color: var(--link);
-      text-decoration: underline;
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      height: fit-content;
+      box-shadow: var(--shadow);
     }
 
-    .metaRow{
-      margin-top: auto;
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
+    .sidebar h3 {
+      margin-top: 0;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .filter-list {
+      display: flex;
+      flex-direction: column;
       gap: 10px;
     }
 
-    .open{
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--link);
-      text-decoration: none;
-      padding: 6px 10px;
-      border-radius: 10px;
+    .filter-btn {
+      background: var(--panel-2);
       border: 1px solid var(--border);
-      background: transparent;
-    }
-    .open:hover{ filter: brightness(1.05); }
-
-    .count{
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 10px;
+      text-align: left;
+      cursor: pointer;
+      font-weight: 700;
+      text-transform: uppercase;
       font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-btn.active {
+      outline: 1px solid var(--alert);
+      color: var(--alert);
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .statusbar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
       color: var(--muted);
+      font-size: 14px;
+    }
+
+    .feed-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .feed-title h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .live-indicator {
+      color: var(--alert);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .feed-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+
+    .intel-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .intel-thumb {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      background: #0f141a;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .intel-body {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .intel-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .intel-source,
+    .intel-tag {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+    }
+
+    .intel-source {
+      color: var(--alert);
+    }
+
+    .intel-tag {
+      color: var(--muted);
+    }
+
+    .intel-title {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .intel-title a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .intel-title a:hover {
+      color: var(--alert);
+    }
+
+    .intel-actions {
+      margin-top: auto;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .open-file {
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    .open-file:hover {
+      color: var(--alert);
+      border-color: var(--alert);
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        order: 2;
+      }
     }
   </style>
 </head>
-
 <body>
   <header>
     <div class="topbar">
       <div class="brand">
-        <h1>📰 White Rabbit Foundation</h1>
+        <div class="brand-title">White Rabbit Foundation</div>
+        <div class="brand-subtitle">Archive // Intelligence // Anomalies</div>
       </div>
 
-      <div class="controls">
-        <button class="btn" id="refreshBtn" title="Refresh articles">↻ Refresh</button>
-        <button class="toggle" id="themeBtn" title="Toggle dark mode">🌙 Dark</button>
+      <div class="header-controls">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Search archive..."
+        />
+        <button class="btn" id="refreshBtn">Refresh</button>
+        <button class="btn" id="themeBtn">Light Mode</button>
       </div>
     </div>
   </header>
 
-  <main>
-    <div class="status" id="status">Loading articles...</div>
-    <div class="grid" id="articles"></div>
-  </main>
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Feed Filters</h3>
+      <div class="filter-list">
+        <button class="filter-btn active" data-source="all">All Intel</button>
+        <button class="filter-btn" data-source="Wired">Wired</button>
+        <button class="filter-btn" data-source="BBC">BBC</button>
+        <button class="filter-btn" data-source="CNET">CNET</button>
+        <button class="filter-btn" data-source="Reuters">Reuters</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="statusbar">
+        <div class="feed-title">
+          <h2>Live Intel Feed</h2>
+          <div class="live-indicator">● Live Monitoring</div>
+        </div>
+        <div id="status">Loading archived intelligence...</div>
+      </div>
+
+      <div class="feed-grid" id="articles"></div>
+    </main>
+  </div>
 
   <script>
     const API_URL = '/api/scrape';
-
     const statusEl = document.getElementById('status');
-    const container = document.getElementById('articles');
-    const themeBtn = document.getElementById('themeBtn');
+    const articlesEl = document.getElementById('articles');
+    const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
+    const themeBtn = document.getElementById('themeBtn');
+    const filterButtons = document.querySelectorAll('.filter-btn');
 
-    // ----------------------------
-    // Dark mode toggle + persistence
-    // ----------------------------
-    function setTheme(isDark) {
-      document.body.classList.toggle('dark', isDark);
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-      themeBtn.textContent = isDark ? '☀️ Light' : '🌙 Dark';
-    }
+    let allArticles = [];
+    let currentSource = 'all';
 
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') setTheme(true);
-    else setTheme(false);
-
-    themeBtn.addEventListener('click', () => {
-      const isDark = !document.body.classList.contains('dark');
-      setTheme(isDark);
-    });
-
-    // ----------------------------
-    // Render
-    // ----------------------------
     function safeText(str) {
       return (str || '').replace(/\s+/g, ' ').trim();
     }
 
+    function getCategoryFromTitle(title = '') {
+      const t = title.toLowerCase();
+
+      if (t.includes('ufo') || t.includes('uap') || t.includes('alien')) return 'UAP';
+      if (t.includes('ancient') || t.includes('civilization') || t.includes('pyramid')) return 'Ancient';
+      if (t.includes('ghost') || t.includes('haunted') || t.includes('paranormal')) return 'Paranormal';
+      if (t.includes('conspiracy') || t.includes('secret')) return 'Conspiracy';
+      return 'Intel';
+    }
+
     function renderArticles(articles) {
-      container.innerHTML = '';
-      if (!articles || articles.length === 0) {
-        statusEl.textContent = 'No articles found.';
+      articlesEl.innerHTML = '';
+
+      if (!articles.length) {
+        statusEl.textContent = 'No matching intelligence found.';
         return;
       }
 
-      statusEl.innerHTML = `Loaded <b>${articles.length}</b> articles.`;
+      statusEl.innerHTML = `Loaded <b>${articles.length}</b> briefing(s).`;
 
-      articles.forEach(a => {
-        const title = safeText(a.title);
-        const link = a.link || '#';
-        const source = safeText(a.source || 'Unknown');
-        const thumb = a.thumbnail || '';
-
+      articles.forEach(article => {
         const card = document.createElement('div');
-        card.className = 'card';
+        card.className = 'intel-card';
+
+        const title = safeText(article.title);
+        const link = article.link || '#';
+        const source = safeText(article.source || 'Unknown');
+        const thumb = article.thumbnail || 'https://via.placeholder.com/600x400?text=No+Image';
+        const tag = getCategoryFromTitle(title);
 
         card.innerHTML = `
-          <img class="thumb" src="${thumb}" alt="thumbnail" loading="lazy"
-               onerror="this.onerror=null; this.src='https://via.placeholder.com/600x400?text=No+Image';">
-          <div class="content">
-            <div class="source">${source}</div>
-            <h3 class="title">
+          <img class="intel-thumb" src="${thumb}" alt="thumbnail"
+               onerror="this.onerror=null;this.src='https://via.placeholder.com/600x400?text=No+Image';">
+          <div class="intel-body">
+            <div class="intel-meta">
+              <span class="intel-source">${source}</span>
+              <span class="intel-tag">${tag}</span>
+            </div>
+            <h3 class="intel-title">
               <a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a>
             </h3>
-            <div class="metaRow">
-              <a class="open" href="${link}" target="_blank" rel="noopener noreferrer">Open ↗</a>
-              <span class="count"> </span>
+            <div class="intel-actions">
+              <a class="open-file" href="${link}" target="_blank" rel="noopener noreferrer">Open File</a>
             </div>
           </div>
         `;
 
-        container.appendChild(card);
+        articlesEl.appendChild(card);
       });
     }
 
-    // ----------------------------
-    // Load articles
-    // ----------------------------
+    function applyFilters() {
+      const query = searchInput.value.toLowerCase().trim();
+
+      let filtered = allArticles.filter(article => {
+        const matchesSource =
+          currentSource === 'all' || (article.source || '').toLowerCase() === currentSource.toLowerCase();
+
+        const title = (article.title || '').toLowerCase();
+        const source = (article.source || '').toLowerCase();
+        const matchesSearch = title.includes(query) || source.includes(query);
+
+        return matchesSource && matchesSearch;
+      });
+
+      renderArticles(filtered);
+    }
+
     async function loadArticles() {
       try {
-        statusEl.textContent = 'Loading articles...';
-        container.innerHTML = '';
+        statusEl.textContent = 'Loading archived intelligence...';
+        articlesEl.innerHTML = '';
 
         const res = await fetch(API_URL);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
 
-        renderArticles(data);
+        const data = await res.json();
+        allArticles = data;
+        applyFilters();
       } catch (err) {
         console.error(err);
-        statusEl.innerHTML = `<span style="color:#ff6b6b;font-weight:700;">Error loading articles.</span> Make sure your server is running on port 3000.`;
+        statusEl.textContent = 'Error loading intelligence feed.';
       }
     }
 
+    searchInput.addEventListener('input', applyFilters);
+
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSource = btn.dataset.source;
+        applyFilters();
+      });
+    });
+
     refreshBtn.addEventListener('click', loadArticles);
+
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-lite');
+      if (document.body.classList.contains('dark-lite')) {
+        document.documentElement.style.setProperty('--bg', '#eef2f7');
+        document.documentElement.style.setProperty('--text', '#111');
+        document.documentElement.style.setProperty('--muted', '#56606b');
+        document.documentElement.style.setProperty('--card', '#ffffff');
+        document.documentElement.style.setProperty('--panel', '#ffffff');
+        document.documentElement.style.setProperty('--panel-2', '#f3f6f9');
+        document.documentElement.style.setProperty('--border', 'rgba(0,0,0,0.08)');
+        document.documentElement.style.setProperty('--alert', '#005f99');
+        themeBtn.textContent = 'Dark Mode';
+      } else {
+        document.documentElement.style.setProperty('--bg', '#0a0d10');
+        document.documentElement.style.setProperty('--text', '#e8edf2');
+        document.documentElement.style.setProperty('--muted', '#8d98a5');
+        document.documentElement.style.setProperty('--card', '#11161c');
+        document.documentElement.style.setProperty('--panel', '#11161c');
+        document.documentElement.style.setProperty('--panel-2', '#151c24');
+        document.documentElement.style.setProperty('--border', 'rgba(255,255,255,0.08)');
+        document.documentElement.style.setProperty('--alert', '#8ee6ff');
+        themeBtn.textContent = 'Light Mode';
+      }
+    });
 
     loadArticles();
   </script>
