@@ -12,9 +12,7 @@
       --border: rgba(255,255,255,0.08);
       --text: #e8edf2;
       --muted: #8d98a5;
-      --accent: #d9e2ec;
       --alert: #8ee6ff;
-      --danger: #ff5c5c;
       --shadow: 0 10px 30px rgba(0,0,0,0.35);
     }
 
@@ -46,12 +44,7 @@
       justify-content: space-between;
       align-items: center;
       gap: 16px;
-    }
-
-    .brand {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      flex-wrap: wrap;
     }
 
     .brand-title {
@@ -306,7 +299,7 @@
 <body>
   <header>
     <div class="topbar">
-      <div class="brand">
+      <div>
         <div class="brand-title">White Rabbit Foundation</div>
         <div class="brand-subtitle">Archive // Intelligence // Anomalies</div>
       </div>
@@ -319,7 +312,6 @@
           placeholder="Search archive..."
         />
         <button class="btn" id="refreshBtn">Refresh</button>
-        <button class="btn" id="themeBtn">Light Mode</button>
       </div>
     </div>
   </header>
@@ -332,7 +324,9 @@
         <button class="filter-btn" data-source="Wired">Wired</button>
         <button class="filter-btn" data-source="BBC">BBC</button>
         <button class="filter-btn" data-source="CNET">CNET</button>
-        <button class="filter-btn" data-source="Reuters">Eclipse Zero Vault</button>
+        <button class="filter-btn" data-source="Reuters">Reuters</button>
+        <button class="filter-btn" data-source="Reddit UFOs">Reddit UFOs</button>
+        <button class="filter-btn" data-source="Natural News">Natural News</button>
       </div>
     </aside>
 
@@ -355,7 +349,6 @@
     const articlesEl = document.getElementById('articles');
     const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
-    const themeBtn = document.getElementById('themeBtn');
     const filterButtons = document.querySelectorAll('.filter-btn');
 
     let allArticles = [];
@@ -371,8 +364,50 @@
       if (t.includes('ufo') || t.includes('uap') || t.includes('alien')) return 'UAP';
       if (t.includes('ancient') || t.includes('civilization') || t.includes('pyramid')) return 'Ancient';
       if (t.includes('ghost') || t.includes('haunted') || t.includes('paranormal')) return 'Paranormal';
-      if (t.includes('conspiracy') || t.includes('secret')) return 'Conspiracy';
+      if (t.includes('conspiracy') || t.includes('secret') || t.includes('classified')) return 'Conspiracy';
+      if (t.includes('health') || t.includes('virus') || t.includes('vaccine')) return 'Health';
+      if (t.includes('war') || t.includes('military') || t.includes('pentagon')) return 'Intel';
       return 'Intel';
+    }
+
+    function getFallbackImage(article) {
+      const title = (article.title || '').toLowerCase();
+      const source = (article.source || '').toLowerCase();
+
+      if (title.includes('ufo') || title.includes('uap') || title.includes('alien')) {
+        return '/images/ufo.jpg';
+      }
+
+      if (title.includes('ancient') || title.includes('civilization') || title.includes('pyramid')) {
+        return '/images/ancient.jpg';
+      }
+
+      if (title.includes('ghost') || title.includes('haunted') || title.includes('paranormal')) {
+        return '/images/paranormal.jpg';
+      }
+
+      if (
+        title.includes('conspiracy') ||
+        title.includes('secret') ||
+        title.includes('classified') ||
+        title.includes('society')
+      ) {
+        return '/images/conspiracy.jpg';
+      }
+
+      if (
+        source.includes('reuters') ||
+        source.includes('bbc') ||
+        source.includes('cnet') ||
+        source.includes('wired') ||
+        title.includes('war') ||
+        title.includes('military') ||
+        title.includes('pentagon')
+      ) {
+        return '/images/intel.jpg';
+      }
+
+      return '/images/intel.jpg';
     }
 
     function renderArticles(articles) {
@@ -392,12 +427,11 @@
         const title = safeText(article.title);
         const link = article.link || '#';
         const source = safeText(article.source || 'Unknown');
-        const thumb = article.thumbnail || 'https://via.placeholder.com/600x400?text=No+Image';
+        const thumb = article.thumbnail || getFallbackImage(article);
         const tag = getCategoryFromTitle(title);
 
         card.innerHTML = `
-          <img class="intel-thumb" src="${thumb}" alt="thumbnail"
-               onerror="this.onerror=null;this.src='https://via.placeholder.com/600x400?text=No+Image';">
+          <img class="intel-thumb" src="${thumb}" alt="thumbnail">
           <div class="intel-body">
             <div class="intel-meta">
               <span class="intel-source">${source}</span>
@@ -412,6 +446,11 @@
           </div>
         `;
 
+        const imgEl = card.querySelector('.intel-thumb');
+        imgEl.addEventListener('error', function () {
+          this.src = getFallbackImage(article);
+        });
+
         articlesEl.appendChild(card);
       });
     }
@@ -419,9 +458,10 @@
     function applyFilters() {
       const query = searchInput.value.toLowerCase().trim();
 
-      let filtered = allArticles.filter(article => {
+      const filtered = allArticles.filter(article => {
         const matchesSource =
-          currentSource === 'all' || (article.source || '').toLowerCase() === currentSource.toLowerCase();
+          currentSource === 'all' ||
+          (article.source || '').toLowerCase() === currentSource.toLowerCase();
 
         const title = (article.title || '').toLowerCase();
         const source = (article.source || '').toLowerCase();
@@ -462,31 +502,6 @@
     });
 
     refreshBtn.addEventListener('click', loadArticles);
-
-    themeBtn.addEventListener('click', () => {
-      document.body.classList.toggle('dark-lite');
-      if (document.body.classList.contains('dark-lite')) {
-        document.documentElement.style.setProperty('--bg', '#eef2f7');
-        document.documentElement.style.setProperty('--text', '#111');
-        document.documentElement.style.setProperty('--muted', '#56606b');
-        document.documentElement.style.setProperty('--card', '#ffffff');
-        document.documentElement.style.setProperty('--panel', '#ffffff');
-        document.documentElement.style.setProperty('--panel-2', '#f3f6f9');
-        document.documentElement.style.setProperty('--border', 'rgba(0,0,0,0.08)');
-        document.documentElement.style.setProperty('--alert', '#005f99');
-        themeBtn.textContent = 'Dark Mode';
-      } else {
-        document.documentElement.style.setProperty('--bg', '#0a0d10');
-        document.documentElement.style.setProperty('--text', '#e8edf2');
-        document.documentElement.style.setProperty('--muted', '#8d98a5');
-        document.documentElement.style.setProperty('--card', '#11161c');
-        document.documentElement.style.setProperty('--panel', '#11161c');
-        document.documentElement.style.setProperty('--panel-2', '#151c24');
-        document.documentElement.style.setProperty('--border', 'rgba(255,255,255,0.08)');
-        document.documentElement.style.setProperty('--alert', '#8ee6ff');
-        themeBtn.textContent = 'Light Mode';
-      }
-    });
 
     loadArticles();
   </script>

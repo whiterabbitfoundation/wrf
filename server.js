@@ -50,40 +50,7 @@ async function fetchOGImage(url) {
   }
 }
 
-// ================================
-// Wired
-// ================================
-async function scrapeWired() {
-  try {
-    const baseUrl = 'https://www.wired.com';
-    const { data } = await axios.get(baseUrl, { timeout: 5000 });
-    const $ = cheerio.load(data);
 
-    const articles = [];
-
-    $('a.summary-item__hed-link').each((_, el) => {
-      const title = $(el).text().trim();
-      const href = $(el).attr('href');
-      if (!title || !href) return;
-
-      const link = href.startsWith('http') ? href : `${baseUrl}${href}`;
-      const img = $(el).closest('.summary-item').find('img').attr('src');
-
-      articles.push({
-        source: 'Wired',
-        title,
-        link,
-        thumbnail: img || placeholder
-      });
-    });
-
-    console.log('📰 Wired:', articles.length);
-    return articles;
-  } catch (err) {
-    console.error('❌ Wired error:', err.message);
-    return [];
-  }
-}
 
 // ================================
 // BBC
@@ -224,7 +191,6 @@ async function scrapeNaturalNews() {
 app.get('/api/scrape', async (req, res) => {
   try {
     const results = await Promise.allSettled([
-      scrapeWired(),
       scrapeBBC(),
       scrapeCNET(),
       scrapeReuters(),
