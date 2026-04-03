@@ -361,6 +361,7 @@
     function getCategoryFromTitle(title = '') {
       const t = title.toLowerCase();
 
+      if (t.includes('AI') || t.includes('artificial intelligence') || t.includes('chatgpt') || t.includes('openai') || t.includes('robot')) return 'AI';
       if (t.includes('ufo') || t.includes('uap') || t.includes('alien')) return 'UAP';
       if (t.includes('ancient') || t.includes('civilization') || t.includes('pyramid')) return 'Ancient';
       if (t.includes('ghost') || t.includes('haunted') || t.includes('paranormal')) return 'Paranormal';
@@ -371,44 +372,55 @@
     }
 
     function getFallbackImage(article) {
-      const title = (article.title || '').toLowerCase();
-      const source = (article.source || '').toLowerCase();
+  const title = (article.title || '').toLowerCase();
+  const source = (article.source || '').toLowerCase();
 
-      if (title.includes('ufo') || title.includes('uap') || title.includes('alien')) {
-        return '/images/ufo.jpg';
-      }
+  if (
+    title.includes('ai') ||
+    title.includes('artificial intelligence') ||
+    title.includes('chatgpt') ||
+    title.includes('openai') ||
+    title.includes('robot') ||
+    title.includes('machine learning')
+  ) {
+    return '/images/ai.jpg';
+  }
 
-      if (title.includes('ancient') || title.includes('civilization') || title.includes('pyramid')) {
-        return '/images/ancient.jpg';
-      }
+  if (title.includes('ufo') || title.includes('uap') || title.includes('alien')) {
+    return '/images/ufo.jpg';
+  }
 
-      if (title.includes('ghost') || title.includes('haunted') || title.includes('paranormal')) {
-        return '/images/paranormal.jpg';
-      }
+  if (title.includes('ancient') || title.includes('civilization') || title.includes('pyramid')) {
+    return '/images/ancient.jpg';
+  }
 
-      if (
-        title.includes('conspiracy') ||
-        title.includes('secret') ||
-        title.includes('classified') ||
-        title.includes('society')
-      ) {
-        return '/images/conspiracy.jpg';
-      }
+  if (title.includes('ghost') || title.includes('haunted') || title.includes('paranormal')) {
+    return '/images/paranormal.jpg';
+  }
 
-      if (
-        source.includes('reuters') ||
-        source.includes('bbc') ||
-        source.includes('cnet') ||
-        source.includes('wired') ||
-        title.includes('war') ||
-        title.includes('military') ||
-        title.includes('pentagon')
-      ) {
-        return '/images/intel.jpg';
-      }
+  if (
+    title.includes('conspiracy') ||
+    title.includes('secret') ||
+    title.includes('classified') ||
+    title.includes('society')
+  ) {
+    return '/images/conspiracy.jpg';
+  }
 
-      return '/images/intel.jpg';
-    }
+  if (
+    source.includes('reuters') ||
+    source.includes('bbc') ||
+    source.includes('cnet') ||
+    source.includes('wired') ||
+    title.includes('war') ||
+    title.includes('military') ||
+    title.includes('pentagon')
+  ) {
+    return '/images/intel.jpg';
+  }
+
+  return '/images/intel.jpg';
+}
 
     function renderArticles(articles) {
       articlesEl.innerHTML = '';
