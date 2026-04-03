@@ -194,6 +194,31 @@ async function scrapeRedditUFO() {
 }
 
 // ================================
+// NATURAL NEWS (RSS)
+// ================================
+async function scrapeNaturalNews() {
+  try {
+    const feed = await parser.parseURL('https://www.naturalnews.com/rss.xml');
+
+    const articles = feed.items.slice(0, 15).map(item => ({
+      source: 'Natural News',
+      title: item.title,
+      link: item.link,
+      thumbnail:
+        item.enclosure?.url ||
+        item['media:thumbnail']?.url ||
+        placeholder
+    }));
+
+    console.log('📰 Natural News:', articles.length);
+    return articles;
+  } catch (err) {
+    console.error('❌ Natural News RSS error:', err.message);
+    return [];
+  }
+}
+
+// ================================
 // API Route
 // ================================
 app.get('/api/scrape', async (req, res) => {
@@ -204,6 +229,7 @@ app.get('/api/scrape', async (req, res) => {
       scrapeCNET(),
       scrapeReuters(),
       scrapeRedditUFO(),
+      scrapeNaturalNews(),
 
     ]);
 
