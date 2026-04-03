@@ -100,9 +100,6 @@ async function scrapeNaturalNews() {
 app.get('/api/scrape', async (req, res) => {
   try {
     const results = await Promise.allSettled([
-      scrapeBBC(),
-      scrapeCNET(),
-      scrapeReuters(),
       scrapeRedditUFO(),
       scrapeNaturalNews(),
 
