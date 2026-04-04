@@ -98,6 +98,33 @@ async function scrapeMediumParanormal() {
 }
 
 // ================================
+// LIVE SCIENCE (RSS)
+// ================================
+async function scrapeLiveScience() {
+  try {
+    const feed = await parser.parseURL('https://www.livescience.com/feeds/all');
+
+    const articles = await Promise.all(
+      feed.items.slice(0, 12).map(async item => ({
+        source: 'Live Science',
+        title: item.title,
+        link: item.link,
+        thumbnail:
+          item.enclosure?.url ||
+          item['media:thumbnail']?.url ||
+          await fetchOGImage(item.link)
+      }))
+    );
+
+    console.log('📰 Live Science:', articles.length);
+    return articles;
+  } catch (err) {
+    console.error('❌ Live Science error:', err.message);
+    return [];
+  }
+}
+
+// ================================
 // NATURAL NEWS (RSS)
 // ================================
 async function scrapeNaturalNews() {
@@ -131,6 +158,7 @@ app.get('/api/scrape', async (req, res) => {
       scrapeNaturalNews(),
         scrapeMediumConspiracy(),
         scrapeMediumParanormal(),
+        scrapeLiveScience(),
 
     ]);
 
