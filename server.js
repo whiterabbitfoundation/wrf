@@ -51,20 +51,48 @@ async function fetchOGImage(url) {
 }
 
 // ================================
-// Reddit
+// MEDIUM (RSS by tag)
 // ================================
-async function scrapeRedditUFO() {
+async function scrapeMediumConspiracy() {
   try {
-    const feed = await parser.parseURL('https://www.reddit.com/r/UFOs/.rss');
+    const feed = await parser.parseURL('https://medium.com/feed/tag/conspiracy');
 
-    return feed.items.slice(0, 10).map(item => ({
-      source: 'Reddit UFOs',
+    const articles = feed.items.slice(0, 10).map(item => ({
+      source: 'Medium Conspiracy',
       title: item.title,
       link: item.link,
-      thumbnail: 'https://www.redditstatic.com/icon.png'
+      thumbnail:
+        item.enclosure?.url ||
+        item['media:thumbnail']?.url ||
+        placeholder
     }));
+
+    console.log('📰 Medium Conspiracy:', articles.length);
+    return articles;
   } catch (err) {
-    console.error('Reddit UFO error:', err.message);
+    console.error('❌ Medium Conspiracy error:', err.message);
+    return [];
+  }
+}
+
+async function scrapeMediumParanormal() {
+  try {
+    const feed = await parser.parseURL('https://medium.com/feed/tag/paranormal');
+
+    const articles = feed.items.slice(0, 10).map(item => ({
+      source: 'Medium Paranormal',
+      title: item.title,
+      link: item.link,
+      thumbnail:
+        item.enclosure?.url ||
+        item['media:thumbnail']?.url ||
+        placeholder
+    }));
+
+    console.log('📰 Medium Paranormal:', articles.length);
+    return articles;
+  } catch (err) {
+    console.error('❌ Medium Paranormal error:', err.message);
     return [];
   }
 }
@@ -100,8 +128,9 @@ async function scrapeNaturalNews() {
 app.get('/api/scrape', async (req, res) => {
   try {
     const results = await Promise.allSettled([
-      scrapeRedditUFO(),
       scrapeNaturalNews(),
+        scrapeMediumConspiracy(),
+        scrapeMediumParanormal(),
 
     ]);
 
