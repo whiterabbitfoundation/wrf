@@ -150,6 +150,72 @@ async function scrapeNaturalNews() {
 }
 
 // ================================
+// DAVID ICKE (Latest News page scrape)
+// ================================
+async function scrapeDavidIcke() {
+  try {
+    const baseUrl = 'https://davidicke.com';
+    const pageUrl = 'https://davidicke.com/category/latest-news/';
+
+    const { data } = await axios.get(pageUrl, {
+      timeout: 5000,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
+      }
+    });
+
+    const $ = cheerio.load(data);
+    const seen = new Set();
+    const articles = [];
+
+    $('a').each((_, el) => {
+      const href = $(el).attr('href');
+      const title = $(el).text().trim();
+
+      if (!href || !title) return;
+
+      // Match dated article URLs like /2025/05/08/article-title/
+      const isArticle =
+        /davidicke\.com\/\d{4}\/\d{2}\/\d{2}\//i.test(href) ||
+        /^\/\d{4}\/\d{2}\/\d{2}\//i.test(href);
+
+      if (!isArticle) return;
+
+      const link = href.startsWith('http') ? href : new URL(href, baseUrl).href;
+      if (seen.has(link)) return;
+      seen.add(link);
+
+      let thumbnail =
+        $(el).closest('article, div, li, section').find('img').first().attr('src') ||
+        $(el).find('img').first().attr('src') ||
+        placeholder;
+
+      if (thumbnail && thumbnail.startsWith('//')) {
+        thumbnail = 'https:' + thumbnail;
+      } else if (thumbnail && thumbnail.startsWith('/')) {
+        thumbnail = new URL(thumbnail, baseUrl).href;
+      }
+
+      articles.push({
+        source: 'David Icke',
+        title,
+        link,
+        thumbnail
+      });
+    });
+
+    console.log('📰 David Icke:', articles.length);
+    return articles.slice(0, 20);
+  } catch (err) {
+    console.error('❌ David Icke error:', err.message);
+    return [];
+  }
+}
+
+
+
+// ================================
 // API Route
 // ================================
 app.get('/api/scrape', async (req, res) => {
@@ -159,6 +225,7 @@ app.get('/api/scrape', async (req, res) => {
         scrapeMediumConspiracy(),
         scrapeMediumParanormal(),
         scrapeLiveScience(),
+         scrapeDavidIcke(),
 
     ]);
 
