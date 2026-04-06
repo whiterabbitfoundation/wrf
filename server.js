@@ -149,7 +149,7 @@ async function scrapeNaturalNews() {
   }
 }
 
-// ================================
+/// ================================
 // DAVID ICKE (Latest News page scrape)
 // ================================
 async function scrapeDavidIcke() {
@@ -216,10 +216,10 @@ app.get('/api/scrape', async (req, res) => {
   try {
     const results = await Promise.allSettled([
       scrapeNaturalNews(),
-        scrapeMediumConspiracy(),
-        scrapeMediumParanormal(),
-        scrapeLiveScience(),
-        scrapeDavidIcke(),
+      scrapeMediumConspiracy(),
+      scrapeMediumParanormal(),
+      scrapeLiveScience(),
+      scrapeDavidIcke(),
 
     ]);
 
