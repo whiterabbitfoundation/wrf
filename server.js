@@ -169,26 +169,20 @@ async function scrapeDavidIcke() {
     const seen = new Set();
     const articles = [];
 
-    $('a').each((_, el) => {
+    // Current page structure: article titles are linked inside h2 elements
+    $('h2 a').each((_, el) => {
       const href = $(el).attr('href');
       const title = $(el).text().trim();
 
       if (!href || !title) return;
-
-      // Match dated article URLs like /2025/05/08/article-title/
-      const isArticle =
-        /davidicke\.com\/\d{4}\/\d{2}\/\d{2}\//i.test(href) ||
-        /^\/\d{4}\/\d{2}\/\d{2}\//i.test(href);
-
-      if (!isArticle) return;
 
       const link = href.startsWith('http') ? href : new URL(href, baseUrl).href;
       if (seen.has(link)) return;
       seen.add(link);
 
       let thumbnail =
-        $(el).closest('article, div, li, section').find('img').first().attr('src') ||
-        $(el).find('img').first().attr('src') ||
+        $(el).closest('article, div, section').find('img').first().attr('src') ||
+        $(el).parent().prevAll('img').first().attr('src') ||
         placeholder;
 
       if (thumbnail && thumbnail.startsWith('//')) {
@@ -225,7 +219,7 @@ app.get('/api/scrape', async (req, res) => {
         scrapeMediumConspiracy(),
         scrapeMediumParanormal(),
         scrapeLiveScience(),
-         scrapeDavidIcke(),
+        scrapeDavidIcke(),
 
     ]);
 
