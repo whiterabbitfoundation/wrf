@@ -158,38 +158,41 @@ async function scrapeDavidIcke() {
     const pageUrl = 'https://davidicke.com/category/latest-news/';
 
     const { data } = await axios.get(pageUrl, {
-  timeout: 7000,
-  headers: {
-    'User-Agent':
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-    'Accept':
-      'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Cache-Control': 'no-cache',
-    'Pragma': 'no-cache',
-    'Referer': 'https://www.google.com/',
-    'DNT': '1',
-    'Upgrade-Insecure-Requests': '1'
-  }
-});
+      timeout: 7000,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Accept':
+          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Referer': 'https://www.google.com/',
+        'DNT': '1',
+        'Upgrade-Insecure-Requests': '1'
+      }
+    });
+
     const $ = cheerio.load(data);
     const seen = new Set();
     const articles = [];
 
-    // Current page structure: article titles are linked inside h2 elements
-    $('h2 a').each((_, el) => {
+    $('h2 a, h3 a, article a').each((_, el) => {
       const href = $(el).attr('href');
       const title = $(el).text().trim();
 
-      if (!href || !title) return;
+      if (!href || !title || title.length < 15) return;
 
-      const link = href.startsWith('http') ? href : new URL(href, baseUrl).href;
+      const link = href.startsWith('http')
+        ? href
+        : new URL(href, baseUrl).href;
+
+      if (!link.includes('davidicke.com')) return;
       if (seen.has(link)) return;
       seen.add(link);
 
       let thumbnail =
         $(el).closest('article, div, section').find('img').first().attr('src') ||
-        $(el).parent().prevAll('img').first().attr('src') ||
         placeholder;
 
       if (thumbnail && thumbnail.startsWith('//')) {
@@ -209,11 +212,10 @@ async function scrapeDavidIcke() {
     console.log('📰 David Icke:', articles.length);
     return articles.slice(0, 20);
   } catch (err) {
-    console.error('❌ David Icke error:', err.message);
+    console.error('❌ David Icke error:', err.response?.status || err.message);
     return [];
   }
 }
-
 
 
 // ================================
