@@ -246,7 +246,7 @@ async function scrapeBlackVault() {
 
 async function scrapeMysteriousUniverse() {
   try {
-    const feed = await parser.parseURL('https://mysteriousuniverse.org/feed/');
+    const feed = await parser.parseURL('https://mysteriousuniverse.org/read/');
 
     return feed.items.slice(0, 10).map(item => ({
       source: 'Mysterious Universe',
