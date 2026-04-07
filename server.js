@@ -217,6 +217,52 @@ async function scrapeDavidIcke() {
   }
 }
 
+// ================================
+// C2C scraper
+// ================================
+
+async function scrapeCoastToCoast() {
+  try {
+    const feed = await parser.parseURL('https://www.coasttocoastam.com/rss');
+
+    return feed.items.slice(0, 10).map(item => ({
+      source: 'Coast to Coast AM',
+      title: item.title,
+      link: item.link,
+      thumbnail:
+        item.enclosure?.url ||
+        item['media:thumbnail']?.url ||
+        placeholder
+    }));
+  } catch (err) {
+    console.error('❌ Coast to Coast error:', err.message);
+    return [];
+  }
+}
+
+// ================================
+// Black Vault
+// ================================
+
+async function scrapeBlackVault() {
+  try {
+    const feed = await parser.parseURL('https://www.theblackvault.com/documentarchive/feed/');
+
+    return feed.items.slice(0, 10).map(item => ({
+      source: 'Black Vault',
+      title: item.title,
+      link: item.link,
+      thumbnail:
+        item.enclosure?.url ||
+        item['media:thumbnail']?.url ||
+        placeholder
+    }));
+  } catch (err) {
+    console.error('❌ Black Vault error:', err.message);
+    return [];
+  }
+}
+
 
 // ================================
 // API Route
@@ -229,6 +275,8 @@ app.get('/api/scrape', async (req, res) => {
       scrapeMediumParanormal(),
       scrapeLiveScience(),
       scrapeDavidIcke(),
+      scrapeCoastToCoast(),
+      scrapeBlackVault(),
 
     ]);
 
