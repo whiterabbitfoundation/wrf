@@ -240,28 +240,6 @@ async function scrapeBlackVault() {
   }
 }
 
-// ================================
-// Mysterious Universe
-// ================================
-
-async function scrapeMysteriousUniverse() {
-  try {
-    const feed = await parser.parseURL('https://mysteriousuniverse.org/feed/');
-
-    return feed.items.slice(0, 10).map(item => ({
-      source: 'Mysterious Universe',
-      title: item.title,
-      link: item.link,
-      thumbnail:
-        item.enclosure?.url ||
-        item['media:thumbnail']?.url ||
-        placeholder
-    }));
-  } catch (err) {
-    console.error('❌ Mysterious Universe error:', err.message);
-    return [];
-  }
-}
 
 // ================================
 // ANCIENT ORIGINS (RSS)
@@ -304,7 +282,6 @@ app.get('/api/scrape', async (req, res) => {
       scrapeLiveScience(),
       scrapeDavidIcke(),
       scrapeBlackVault(),
-      scrapeMysteriousUniverse(),
       scrapeAncientOrigins(),
 
     ]);
