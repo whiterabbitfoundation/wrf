@@ -263,6 +263,33 @@ async function scrapeMysteriousUniverse() {
   }
 }
 
+// ================================
+// ANCIENT ORIGINS (RSS)
+// ================================
+async function scrapeAncientOrigins() {
+  try {
+    const feed = await parser.parseURL('https://feeds.feedburner.com/AncientOrigins');
+
+    const articles = await Promise.all(
+      feed.items.slice(0, 12).map(async item => ({
+        source: 'Ancient Origins',
+        title: item.title,
+        link: item.link,
+        thumbnail:
+          item.enclosure?.url ||
+          item['media:thumbnail']?.url ||
+          placeholder
+      }))
+    );
+
+    console.log('📰 Ancient Origins:', articles.length);
+    return articles;
+  } catch (err) {
+    console.error('❌ Ancient Origins error:', err.message);
+    return [];
+  }
+}
+
 
 
 // ================================
@@ -278,7 +305,7 @@ app.get('/api/scrape', async (req, res) => {
       scrapeDavidIcke(),
       scrapeBlackVault(),
       scrapeMysteriousUniverse(),
-      
+      scrapeAncientOrigins(),
 
     ]);
 
