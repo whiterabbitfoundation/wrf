@@ -15,24 +15,138 @@ app.use(express.static(path.join(__dirname, 'public')));
 const placeholder =
   'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Reuters_Logo.svg/200px-Reuters_Logo.svg.png';
 
-// Home route
+const DEFAULT_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+  'Accept':
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache',
+  'Referer': 'https://www.google.com/',
+  'DNT': '1',
+  'Upgrade-Insecure-Requests': '1'
+};
+
+const SOURCE_CONFIGS = [
+  {
+    key: 'natural-news',
+    source: 'Natural News',
+    type: 'rss',
+    url: 'https://www.naturalnews.com/rss.xml',
+    limit: 15
+  },
+  {
+    key: 'medium-conspiracy',
+    source: 'Medium Conspiracy',
+    type: 'rss',
+    url: 'https://medium.com/feed/tag/conspiracy',
+    limit: 10
+  },
+  {
+    key: 'medium-paranormal',
+    source: 'Medium Paranormal',
+    type: 'rss',
+    url: 'https://medium.com/feed/tag/paranormal',
+    limit: 10
+  },
+  {
+    key: 'live-science',
+    source: 'Live Science',
+    type: 'rss',
+    url: 'https://www.livescience.com/feeds/all',
+    limit: 12,
+    mapItem: async item => ({
+      thumbnail:
+        getItemThumbnail(item) ||
+        await fetchOGImage(item.link)
+    })
+  },
+  {
+    key: 'black-vault',
+    source: 'Black Vault',
+    type: 'rss',
+    url: 'https://www.theblackvault.com/documentarchive/feed/',
+    limit: 10
+  },
+  {
+    key: 'ancient-origins',
+    source: 'Ancient Origins',
+    type: 'rss',
+    url: 'https://feeds.feedburner.com/AncientOrigins',
+    limit: 12
+  },
+  {
+    key: 'david-icke',
+    source: 'David Icke',
+    type: 'html',
+    url: 'https://davidicke.com/category/latest-news/',
+    baseUrl: 'https://davidicke.com',
+    limit: 20,
+    extractItems: extractDavidIckeArticles
+  }
+];
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ================================
-// Helper: Extract best image
-// ================================
+function toAbsoluteUrl(url, baseUrl) {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('//')) return `https:${url}`;
+  if (!baseUrl) return null;
+
+  try {
+    return new URL(url, baseUrl).href;
+  } catch (err) {
+    return null;
+  }
+}
+
+function getItemThumbnail(item, baseUrl) {
+  return (
+    toAbsoluteUrl(item.enclosure?.url, baseUrl) ||
+    toAbsoluteUrl(item['media:thumbnail']?.url, baseUrl) ||
+    toAbsoluteUrl(item.thumbnail, baseUrl) ||
+    null
+  );
+}
+
+function getPublishedAt(item) {
+  return item.isoDate || item.pubDate || item.published || null;
+}
+
+function normalizeArticle({
+  source,
+  title,
+  link,
+  thumbnail,
+  publishedAt
+}) {
+  if (!title || !link) return null;
+
+  return {
+    source,
+    title: String(title).trim(),
+    link,
+    thumbnail: thumbnail || placeholder,
+    publishedAt: publishedAt || null
+  };
+}
+
+async function fetchHtml(url, timeout = 7000) {
+  const { data } = await axios.get(url, {
+    timeout,
+    headers: DEFAULT_HEADERS
+  });
+
+  return data;
+}
+
 async function fetchOGImage(url) {
   try {
-    const { data } = await axios.get(url, {
-      timeout: 4000,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36'
-      }
-    });
-
+    const data = await fetchHtml(url, 4000);
     const $ = cheerio.load(data);
 
     const candidates = [
@@ -42,254 +156,138 @@ async function fetchOGImage(url) {
       $('img').first().attr('src')
     ];
 
-    const img = candidates.find(src => src && src.startsWith('http'));
-    return img || placeholder;
+    const img = candidates.find(Boolean);
+    return toAbsoluteUrl(img, url) || placeholder;
   } catch (err) {
     console.warn(`⚠️ Failed image fetch for ${url}: ${err.message}`);
     return placeholder;
   }
 }
 
-// ================================
-// MEDIUM (RSS by tag)
-// ================================
-async function scrapeMediumConspiracy() {
-  try {
-    const feed = await parser.parseURL('https://medium.com/feed/tag/conspiracy');
+async function scrapeRssSource(config) {
+  const feed = await parser.parseURL(config.url);
+  const items = feed.items.slice(0, config.limit);
 
-    const articles = feed.items.slice(0, 10).map(item => ({
-      source: 'Medium Conspiracy',
-      title: item.title,
-      link: item.link,
-      thumbnail:
-        item.enclosure?.url ||
-        item['media:thumbnail']?.url ||
-        placeholder
-    }));
+  const articles = await Promise.all(
+    items.map(async item => {
+      const extra = config.mapItem ? await config.mapItem(item) : {};
 
-    console.log('📰 Medium Conspiracy:', articles.length);
-    return articles;
-  } catch (err) {
-    console.error('❌ Medium Conspiracy error:', err.message);
-    return [];
-  }
-}
-
-async function scrapeMediumParanormal() {
-  try {
-    const feed = await parser.parseURL('https://medium.com/feed/tag/paranormal');
-
-    const articles = feed.items.slice(0, 10).map(item => ({
-      source: 'Medium Paranormal',
-      title: item.title,
-      link: item.link,
-      thumbnail:
-        item.enclosure?.url ||
-        item['media:thumbnail']?.url ||
-        placeholder
-    }));
-
-    console.log('📰 Medium Paranormal:', articles.length);
-    return articles;
-  } catch (err) {
-    console.error('❌ Medium Paranormal error:', err.message);
-    return [];
-  }
-}
-
-// ================================
-// LIVE SCIENCE (RSS)
-// ================================
-async function scrapeLiveScience() {
-  try {
-    const feed = await parser.parseURL('https://www.livescience.com/feeds/all');
-
-    const articles = await Promise.all(
-      feed.items.slice(0, 12).map(async item => ({
-        source: 'Live Science',
+      return normalizeArticle({
+        source: config.source,
         title: item.title,
         link: item.link,
-        thumbnail:
-          item.enclosure?.url ||
-          item['media:thumbnail']?.url ||
-          await fetchOGImage(item.link)
-      }))
-    );
+        thumbnail: extra.thumbnail || getItemThumbnail(item, config.baseUrl),
+        publishedAt: extra.publishedAt || getPublishedAt(item)
+      });
+    })
+  );
 
-    console.log('📰 Live Science:', articles.length);
-    return articles;
-  } catch (err) {
-    console.error('❌ Live Science error:', err.message);
-    return [];
-  }
+  return articles.filter(Boolean);
 }
 
-// ================================
-// NATURAL NEWS (RSS)
-// ================================
-async function scrapeNaturalNews() {
-  try {
-    const feed = await parser.parseURL('https://www.naturalnews.com/rss.xml');
+function extractDavidIckeArticles($, config) {
+  const seen = new Set();
+  const articles = [];
 
-    const articles = feed.items.slice(0, 15).map(item => ({
-      source: 'Natural News',
-      title: item.title,
-      link: item.link,
-      thumbnail:
-        item.enclosure?.url ||
-        item['media:thumbnail']?.url ||
-        placeholder
-    }));
+  $('h2 a, h3 a, article a').each((_, el) => {
+    const href = $(el).attr('href');
+    const title = $(el).text().trim();
+    const link = toAbsoluteUrl(href, config.baseUrl);
 
-    console.log('📰 Natural News:', articles.length);
-    return articles;
-  } catch (err) {
-    console.error('❌ Natural News RSS error:', err.message);
-    return [];
-  }
-}
+    if (!link || !title || title.length < 15) return;
+    if (!link.includes('davidicke.com')) return;
+    if (seen.has(link)) return;
 
-/// ================================
-// DAVID ICKE (Latest News page scrape)
-// ================================
-async function scrapeDavidIcke() {
-  try {
-    const baseUrl = 'https://davidicke.com';
-    const pageUrl = 'https://davidicke.com/category/latest-news/';
+    seen.add(link);
 
-    const { data } = await axios.get(pageUrl, {
-      timeout: 7000,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
-        'Accept':
-          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Referer': 'https://www.google.com/',
-        'DNT': '1',
-        'Upgrade-Insecure-Requests': '1'
-      }
-    });
+    const nearbyImage =
+      $(el).closest('article, div, section').find('img').first().attr('src');
 
-    const $ = cheerio.load(data);
-    const seen = new Set();
-    const articles = [];
-
-    $('h2 a, h3 a, article a').each((_, el) => {
-      const href = $(el).attr('href');
-      const title = $(el).text().trim();
-
-      if (!href || !title || title.length < 15) return;
-
-      const link = href.startsWith('http')
-        ? href
-        : new URL(href, baseUrl).href;
-
-      if (!link.includes('davidicke.com')) return;
-      if (seen.has(link)) return;
-      seen.add(link);
-
-      let thumbnail =
-        $(el).closest('article, div, section').find('img').first().attr('src') ||
-        placeholder;
-
-      if (thumbnail && thumbnail.startsWith('//')) {
-        thumbnail = 'https:' + thumbnail;
-      } else if (thumbnail && thumbnail.startsWith('/')) {
-        thumbnail = new URL(thumbnail, baseUrl).href;
-      }
-
-      articles.push({
-        source: 'David Icke',
+    articles.push(
+      normalizeArticle({
+        source: config.source,
         title,
         link,
-        thumbnail
-      });
-    });
-
-    console.log('📰 David Icke:', articles.length);
-    return articles.slice(0, 20);
-  } catch (err) {
-    console.error('❌ David Icke error:', err.response?.status || err.message);
-    return [];
-  }
-}
-
-// ================================
-// Black Vault
-// ================================
-
-async function scrapeBlackVault() {
-  try {
-    const feed = await parser.parseURL('https://www.theblackvault.com/documentarchive/feed/');
-
-    return feed.items.slice(0, 10).map(item => ({
-      source: 'Black Vault',
-      title: item.title,
-      link: item.link,
-      thumbnail:
-        item.enclosure?.url ||
-        item['media:thumbnail']?.url ||
-        placeholder
-    }));
-  } catch (err) {
-    console.error('❌ Black Vault error:', err.message);
-    return [];
-  }
-}
-
-
-// ================================
-// ANCIENT ORIGINS (RSS)
-// ================================
-async function scrapeAncientOrigins() {
-  try {
-    const feed = await parser.parseURL('https://feeds.feedburner.com/AncientOrigins');
-
-    const articles = await Promise.all(
-      feed.items.slice(0, 12).map(async item => ({
-        source: 'Ancient Origins',
-        title: item.title,
-        link: item.link,
-        thumbnail:
-          item.enclosure?.url ||
-          item['media:thumbnail']?.url ||
-          placeholder
-      }))
+        thumbnail: toAbsoluteUrl(nearbyImage, config.baseUrl),
+        publishedAt: null
+      })
     );
+  });
 
-    console.log('📰 Ancient Origins:', articles.length);
-    return articles;
+  return articles.filter(Boolean).slice(0, config.limit);
+}
+
+async function scrapeHtmlSource(config) {
+  const data = await fetchHtml(config.url);
+  const $ = cheerio.load(data);
+  return config.extractItems($, config);
+}
+
+async function runSource(config) {
+  try {
+    const articles =
+      config.type === 'html'
+        ? await scrapeHtmlSource(config)
+        : await scrapeRssSource(config);
+
+    console.log(`📰 ${config.source}: ${articles.length}`);
+
+    return {
+      key: config.key,
+      source: config.source,
+      ok: true,
+      articles
+    };
   } catch (err) {
-    console.error('❌ Ancient Origins error:', err.message);
-    return [];
+    console.error(`❌ ${config.source} error:`, err.response?.status || err.message);
+
+    return {
+      key: config.key,
+      source: config.source,
+      ok: false,
+      articles: [],
+      error: err.message
+    };
   }
 }
 
+function dedupeArticles(articles) {
+  const seen = new Set();
 
+  return articles.filter(article => {
+    const key = article.link;
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
-// ================================
-// API Route
-// ================================
+function getSortableTimestamp(article) {
+  const value = article.publishedAt ? Date.parse(article.publishedAt) : NaN;
+  return Number.isNaN(value) ? 0 : value;
+}
+
+function sortArticlesByDate(articles) {
+  return [...articles].sort(
+    (a, b) => getSortableTimestamp(b) - getSortableTimestamp(a)
+  );
+}
+
 app.get('/api/scrape', async (req, res) => {
   try {
-    const results = await Promise.allSettled([
-      scrapeNaturalNews(),
-      scrapeMediumConspiracy(),
-      scrapeMediumParanormal(),
-      scrapeLiveScience(),
-      scrapeDavidIcke(),
-      scrapeBlackVault(),
-      scrapeAncientOrigins(),
+    const sourceResults = await Promise.all(SOURCE_CONFIGS.map(runSource));
 
-    ]);
+    const articles = sortArticlesByDate(
+      dedupeArticles(sourceResults.flatMap(result => result.articles))
+    );
 
-    const articles = results
-      .filter(result => result.status === 'fulfilled')
-      .flatMap(result => result.value);
+    const health = sourceResults.map(result => ({
+      source: result.source,
+      ok: result.ok,
+      count: result.articles.length
+    }));
 
+    res.set('X-Feed-Health', JSON.stringify(health));
     res.json(articles);
   } catch (err) {
     console.error('❌ API scrape error:', err.message);
@@ -297,9 +295,6 @@ app.get('/api/scrape', async (req, res) => {
   }
 });
 
-// ================================
-// Start server
-// ================================
 app.listen(port, () => {
   console.log(`🧠 Scraper running → http://localhost:${port}`);
 });

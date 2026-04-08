@@ -319,7 +319,7 @@
   <div class="layout">
     <aside class="sidebar">
       <h3>Feed Filters</h3>
-      <div class="filter-list">
+      <div class="filter-list" id="filterList">
         <button class="filter-btn active" data-source="all">All Intel</button>
       </div>
     </aside>
@@ -343,7 +343,7 @@
     const articlesEl = document.getElementById('articles');
     const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
-    const filterButtons = document.querySelectorAll('.filter-btn');
+    const filterList = document.getElementById('filterList');
 
     let allArticles = [];
     let currentSource = 'all';
@@ -352,10 +352,20 @@
       return (str || '').replace(/\s+/g, ' ').trim();
     }
 
+    function escapeHtml(str = '') {
+      return str.replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[char]);
+    }
+
     function getCategoryFromTitle(title = '') {
       const t = title.toLowerCase();
 
-      if (t.includes('AI') || t.includes('artificial intelligence') || t.includes('chatgpt') || t.includes('openai') || t.includes('robot')) return 'AI';
+      if (t.includes('ai') || t.includes('artificial intelligence') || t.includes('chatgpt') || t.includes('openai') || t.includes('robot')) return 'AI';
       if (t.includes('ufo') || t.includes('uap') || t.includes('alien')) return 'UAP';
       if (t.includes('ancient') || t.includes('civilization') || t.includes('pyramid')) return 'Ancient';
       if (t.includes('ghost') || t.includes('haunted') || t.includes('paranormal')) return 'Paranormal';
@@ -366,51 +376,67 @@
     }
 
     function getFallbackImage(article) {
-  const title = (article.title || '').toLowerCase();
-  const source = (article.source || '').toLowerCase();
+      const title = (article.title || '').toLowerCase();
 
-  if (
-    title.includes('ai') ||
-    title.includes('artificial intelligence') ||
-    title.includes('chatgpt') ||
-    title.includes('openai') ||
-    title.includes('robot') ||
-    title.includes('machine learning')
-  ) {
-    return '/images/ai.jpg';
-  }
+      if (
+        title.includes('ai') ||
+        title.includes('artificial intelligence') ||
+        title.includes('chatgpt') ||
+        title.includes('openai') ||
+        title.includes('robot') ||
+        title.includes('machine learning')
+      ) {
+        return '/images/ai.jpg';
+      }
 
-  if (title.includes('ufo') || title.includes('uap') || title.includes('alien')) {
-    return '/images/ufo.jpg';
-  }
+      if (title.includes('ufo') || title.includes('uap') || title.includes('alien')) {
+        return '/images/ufo.jpg';
+      }
 
-  if (title.includes('ancient') || title.includes('civilization') || title.includes('pyramid')) {
-    return '/images/ancient.jpg';
-  }
+      if (title.includes('ancient') || title.includes('civilization') || title.includes('pyramid')) {
+        return '/images/ancient civilization.jpg';
+      }
 
-  if (title.includes('ghost') || title.includes('haunted') || title.includes('paranormal')) {
-    return '/images/paranormal.jpg';
-  }
+      if (title.includes('ghost') || title.includes('haunted') || title.includes('paranormal')) {
+        return '/images/paranormal.jpg';
+      }
 
-  if (
-    title.includes('conspiracy') ||
-    title.includes('secret') ||
-    title.includes('classified') ||
-    title.includes('society')
-  ) {
-    return '/images/conspiracy.jpg';
-  }
+      if (
+        title.includes('conspiracy') ||
+        title.includes('secret') ||
+        title.includes('classified') ||
+        title.includes('society')
+      ) {
+        return '/images/conspiracy.jpg';
+      }
 
-  if (
-    title.includes('war') ||
-    title.includes('military') ||
-    title.includes('pentagon')
-  ) {
-    return '/images/intel.jpg';
-  }
+      if (
+        title.includes('health') ||
+        title.includes('virus') ||
+        title.includes('vaccine')
+      ) {
+        return '/images/health.jpg';
+      }
 
-  return '/images/intel.jpg';
-}
+      return '/images/ai4.jpg';
+    }
+
+    function renderFilters(articles) {
+      const sources = [...new Set(articles.map(article => safeText(article.source)).filter(Boolean))].sort();
+
+      filterList.innerHTML = `
+        <button class="filter-btn ${currentSource === 'all' ? 'active' : ''}" data-source="all">All Intel</button>
+        ${sources
+          .map(
+            source => `
+              <button class="filter-btn ${currentSource === source ? 'active' : ''}" data-source="${escapeHtml(source)}">
+                ${escapeHtml(source)}
+              </button>
+            `
+          )
+          .join('')}
+      `;
+    }
 
     function renderArticles(articles) {
       articlesEl.innerHTML = '';
@@ -433,17 +459,17 @@
         const tag = getCategoryFromTitle(title);
 
         card.innerHTML = `
-          <img class="intel-thumb" src="${thumb}" alt="thumbnail">
+          <img class="intel-thumb" src="${escapeHtml(thumb)}" alt="thumbnail">
           <div class="intel-body">
             <div class="intel-meta">
-              <span class="intel-source">${source}</span>
-              <span class="intel-tag">${tag}</span>
+              <span class="intel-source">${escapeHtml(source)}</span>
+              <span class="intel-tag">${escapeHtml(tag)}</span>
             </div>
             <h3 class="intel-title">
-              <a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a>
+              <a href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a>
             </h3>
             <div class="intel-actions">
-              <a class="open-file" href="${link}" target="_blank" rel="noopener noreferrer">Open File</a>
+              <a class="open-file" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">Open File</a>
             </div>
           </div>
         `;
@@ -485,6 +511,7 @@
 
         const data = await res.json();
         allArticles = data;
+        renderFilters(allArticles);
         applyFilters();
       } catch (err) {
         console.error(err);
@@ -494,13 +521,13 @@
 
     searchInput.addEventListener('input', applyFilters);
 
-    filterButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        filterButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentSource = btn.dataset.source;
-        applyFilters();
-      });
+    filterList.addEventListener('click', event => {
+      const btn = event.target.closest('.filter-btn');
+      if (!btn) return;
+
+      currentSource = btn.dataset.source || 'all';
+      renderFilters(allArticles);
+      applyFilters();
     });
 
     refreshBtn.addEventListener('click', loadArticles);
