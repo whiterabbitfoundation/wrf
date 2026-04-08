@@ -343,10 +343,7 @@
     const articlesEl = document.getElementById('articles');
     const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
-    const filterList = document.getElementById('filterList');
-
     let allArticles = [];
-    let currentSource = 'all';
 
     function safeText(str) {
       return (str || '').replace(/\s+/g, ' ').trim();
@@ -421,23 +418,6 @@
       return '/images/ai4.jpg';
     }
 
-    function renderFilters(articles) {
-      const sources = [...new Set(articles.map(article => safeText(article.source)).filter(Boolean))].sort();
-
-      filterList.innerHTML = `
-        <button class="filter-btn ${currentSource === 'all' ? 'active' : ''}" data-source="all">All Intel</button>
-        ${sources
-          .map(
-            source => `
-              <button class="filter-btn ${currentSource === source ? 'active' : ''}" data-source="${escapeHtml(source)}">
-                ${escapeHtml(source)}
-              </button>
-            `
-          )
-          .join('')}
-      `;
-    }
-
     function renderArticles(articles) {
       articlesEl.innerHTML = '';
 
@@ -487,15 +467,11 @@
       const query = searchInput.value.toLowerCase().trim();
 
       const filtered = allArticles.filter(article => {
-        const matchesSource =
-          currentSource === 'all' ||
-          (article.source || '').toLowerCase() === currentSource.toLowerCase();
-
         const title = (article.title || '').toLowerCase();
         const source = (article.source || '').toLowerCase();
         const matchesSearch = title.includes(query) || source.includes(query);
 
-        return matchesSource && matchesSearch;
+        return matchesSearch;
       });
 
       renderArticles(filtered);
@@ -511,7 +487,6 @@
 
         const data = await res.json();
         allArticles = data;
-        renderFilters(allArticles);
         applyFilters();
       } catch (err) {
         console.error(err);
@@ -520,15 +495,6 @@
     }
 
     searchInput.addEventListener('input', applyFilters);
-
-    filterList.addEventListener('click', event => {
-      const btn = event.target.closest('.filter-btn');
-      if (!btn) return;
-
-      currentSource = btn.dataset.source || 'all';
-      renderFilters(allArticles);
-      applyFilters();
-    });
 
     refreshBtn.addEventListener('click', loadArticles);
 
