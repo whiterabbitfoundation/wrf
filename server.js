@@ -77,6 +77,18 @@ const SOURCE_CONFIGS = [
     limit: 12
   },
   {
+    key: 'earthfiles',
+    source: 'Earthfiles',
+    type: 'rss',
+    url: 'https://www.earthfiles.com/feed/',
+    limit: 10,
+    mapItem: async item => ({
+      thumbnail:
+        getItemThumbnail(item, 'https://www.earthfiles.com') ||
+        await fetchOGImage(item.link)
+    })
+  },
+  {
     key: 'david-icke',
     source: 'David Icke',
     type: 'html',
@@ -164,8 +176,25 @@ async function fetchOGImage(url) {
   }
 }
 
+async function fetchRssFeed(url, timeout = 7000) {
+  try {
+    const { data } = await axios.get(url, {
+      timeout,
+      headers: {
+        ...DEFAULT_HEADERS,
+        Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8'
+      },
+      responseType: 'text'
+    });
+
+    return await parser.parseString(data);
+  } catch (err) {
+    return parser.parseURL(url);
+  }
+}
+
 async function scrapeRssSource(config) {
-  const feed = await parser.parseURL(config.url);
+  const feed = await fetchRssFeed(config.url);
   const items = feed.items.slice(0, config.limit);
 
   const articles = await Promise.all(
