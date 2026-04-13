@@ -89,6 +89,18 @@ const SOURCE_CONFIGS = [
     })
   },
   {
+    key: 'unexplained-mysteries',
+    source: 'Unexplained Mysteries',
+    type: 'rss',
+    url: 'https://www.unexplained-mysteries.com/news/umnews.xml',
+    limit: 10,
+    mapItem: async item => ({
+      thumbnail:
+        getItemThumbnail(item, 'https://www.unexplained-mysteries.com') ||
+        await fetchOGImage(item.link)
+    })
+  },
+  {
     key: 'david-icke',
     source: 'David Icke',
     type: 'html',
