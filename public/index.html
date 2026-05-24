@@ -39,12 +39,15 @@
     .topbar {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
+      padding: 14px 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center;
       gap: 16px;
-      flex-wrap: wrap;
+    }
+
+    .brand-lockup {
+      justify-self: start;
     }
 
     .brand-title {
@@ -61,7 +64,23 @@
       text-transform: uppercase;
     }
 
+    .header-logo {
+      justify-self: center;
+      display: block;
+      line-height: 0;
+    }
+
+    .header-logo img {
+      display: block;
+      width: clamp(96px, 12vw, 160px);
+      height: 82px;
+      object-fit: contain;
+      background: #ffffff;
+      border: 1px solid var(--border);
+    }
+
     .header-controls {
+      justify-self: end;
       display: flex;
       gap: 10px;
       align-items: center;
@@ -293,16 +312,34 @@
       .sidebar {
         order: 2;
       }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+
+      .brand-lockup,
+      .header-controls {
+        justify-self: center;
+      }
+
+      .brand-lockup {
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
   <header>
     <div class="topbar">
-      <div>
+      <div class="brand-lockup">
         <div class="brand-title">White Rabbit Foundation</div>
         <div class="brand-subtitle">Archive // Intelligence // Anomalies</div>
       </div>
+
+      <a class="header-logo" href="/" aria-label="White Rabbit Foundation home">
+        <img src="/images/white-rabbit-logo.jpeg" alt="White Rabbit Foundation logo" />
+      </a>
 
       <div class="header-controls">
         <input
