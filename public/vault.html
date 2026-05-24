@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vault</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #000000;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+    }
+
+    .vault {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 48px 0;
+    }
+
+    .vault-title {
+      margin: 0 0 28px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .thumbnail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 18px;
+    }
+
+    .vault-thumb {
+      display: block;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      background: #000000;
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    .vault-thumb img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+    }
+
+    .thumb-label {
+      display: block;
+      padding: 12px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <main class="vault">
+    <h1 class="vault-title">Vault</h1>
+
+    <div class="thumbnail-grid">
+      <a class="vault-thumb" href="/vault-file.html">
+        <img src="/images/ufo.jpg" alt="Vault thumbnail" />
+        <span class="thumb-label">Vault File 001</span>
+      </a>
+      <a class="vault-thumb" href="/vault-file.html">
+        <img src="/images/ufo.jpg" alt="Vault thumbnail" />
+        <span class="thumb-label">Vault File 002</span>
+      </a>
+      <a class="vault-thumb" href="/vault-file.html">
+        <img src="/images/ufo.jpg" alt="Vault thumbnail" />
+        <span class="thumb-label">Vault File 003</span>
+      </a>
+      <a class="vault-thumb" href="/vault-file.html">
+        <img src="/images/ufo.jpg" alt="Vault thumbnail" />
+        <span class="thumb-label">Vault File 004</span>
+      </a>
+      <a class="vault-thumb" href="/vault-file.html">
+        <img src="/images/ufo.jpg" alt="Vault thumbnail" />
+        <span class="thumb-label">Vault File 005</span>
+      </a>
+      <a class="vault-thumb" href="/vault-file.html">
+        <img src="/images/ufo.jpg" alt="Vault thumbnail" />
+        <span class="thumb-label">Vault File 006</span>
+      </a>
+    </div>
+  </main>
+</body>
+</html>
