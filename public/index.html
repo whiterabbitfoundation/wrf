@@ -382,7 +382,10 @@
     const articlesEl = document.getElementById('articles');
     const searchInput = document.getElementById('searchInput');
     const refreshBtn = document.getElementById('refreshBtn');
+    const SNAPSHOT_STORAGE_KEY = 'white-rabbit-intel-feed-v1';
+    const REFRESH_POLL_DELAY_MS = 1500;
     let allArticles = [];
+    let refreshPollTimer = null;
 
     function safeText(str) {
       return (str || '').replace(/\s+/g, ' ').trim();
@@ -517,27 +520,78 @@
       renderArticles(filtered);
     }
 
-    async function loadArticles() {
+    function saveArticleSnapshot(articles) {
       try {
-        statusEl.textContent = 'Loading archived intelligence...';
-        articlesEl.innerHTML = '';
+        localStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(articles));
+      } catch (err) {
+        console.warn('Unable to save feed snapshot:', err);
+      }
+    }
 
-        const res = await fetch(API_URL);
+    function loadArticleSnapshot() {
+      try {
+        const snapshot = JSON.parse(localStorage.getItem(SNAPSHOT_STORAGE_KEY));
+        return Array.isArray(snapshot) ? snapshot : [];
+      } catch (err) {
+        console.warn('Unable to load feed snapshot:', err);
+        return [];
+      }
+    }
+
+    function scheduleRefreshPoll() {
+      clearTimeout(refreshPollTimer);
+      refreshPollTimer = setTimeout(loadArticles, REFRESH_POLL_DELAY_MS);
+    }
+
+    async function loadArticles({ forceRefresh = false } = {}) {
+      clearTimeout(refreshPollTimer);
+
+      try {
+        statusEl.textContent = allArticles.length
+          ? 'Refreshing archived intelligence...'
+          : 'Loading archived intelligence...';
+
+        const url = forceRefresh ? `${API_URL}?refresh=1` : API_URL;
+        const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
-        allArticles = data;
-        applyFilters();
+        const refreshing = res.headers.get('X-Feed-Refreshing') === 'true';
+
+        if (Array.isArray(data) && data.length) {
+          allArticles = data;
+          saveArticleSnapshot(data);
+          applyFilters();
+        } else if (!allArticles.length) {
+          statusEl.textContent = refreshing
+            ? 'Gathering initial intelligence...'
+            : 'No intelligence briefings available.';
+        } else {
+          statusEl.innerHTML = `Showing <b>${allArticles.length}</b> saved briefing(s).`;
+        }
+
+        if (refreshing) {
+          if (allArticles.length) {
+            statusEl.innerHTML = `Loaded <b>${allArticles.length}</b> briefing(s). Updating sources...`;
+          }
+          scheduleRefreshPoll();
+        }
       } catch (err) {
         console.error(err);
-        statusEl.textContent = 'Error loading intelligence feed.';
+        statusEl.textContent = allArticles.length
+          ? 'Showing saved intelligence. Live refresh unavailable.'
+          : 'Error loading intelligence feed.';
       }
     }
 
     searchInput.addEventListener('input', applyFilters);
 
-    refreshBtn.addEventListener('click', loadArticles);
+    refreshBtn.addEventListener('click', () => {
+      loadArticles({ forceRefresh: true });
+    });
 
+    allArticles = loadArticleSnapshot();
+    if (allArticles.length) applyFilters();
     loadArticles();
   </script>
 </body>

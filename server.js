@@ -8,12 +8,17 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 const parser = new Parser();
+const FEED_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const sourceArticleCache = new Map();
+let feedCache = {
+  articles: [],
+  health: [],
+  updatedAt: null
+};
+let refreshPromise = null;
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
-
-const placeholder =
-  'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Reuters_Logo.svg/200px-Reuters_Logo.svg.png';
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -55,12 +60,7 @@ const SOURCE_CONFIGS = [
     source: 'Live Science',
     type: 'rss',
     url: 'https://www.livescience.com/feeds/all',
-    limit: 12,
-    mapItem: async item => ({
-      thumbnail:
-        getItemThumbnail(item) ||
-        await fetchOGImage(item.link)
-    })
+    limit: 12
   },
   {
     key: 'black-vault',
@@ -82,11 +82,7 @@ const SOURCE_CONFIGS = [
     type: 'rss',
     url: 'https://www.earthfiles.com/feed/',
     limit: 10,
-    mapItem: async item => ({
-      thumbnail:
-        getItemThumbnail(item, 'https://www.earthfiles.com') ||
-        await fetchOGImage(item.link)
-    })
+    baseUrl: 'https://www.earthfiles.com'
   },
   {
     key: 'unexplained-mysteries',
@@ -94,11 +90,7 @@ const SOURCE_CONFIGS = [
     type: 'rss',
     url: 'https://www.unexplained-mysteries.com/news/umnews.xml',
     limit: 10,
-    mapItem: async item => ({
-      thumbnail:
-        getItemThumbnail(item, 'https://www.unexplained-mysteries.com') ||
-        await fetchOGImage(item.link)
-    })
+    baseUrl: 'https://www.unexplained-mysteries.com'
   },
   {
     key: 'david-icke',
@@ -154,7 +146,7 @@ function normalizeArticle({
     source,
     title: String(title).trim(),
     link,
-    thumbnail: thumbnail || placeholder,
+    thumbnail: thumbnail || null,
     publishedAt: publishedAt || null
   };
 }
@@ -168,41 +160,17 @@ async function fetchHtml(url, timeout = 7000) {
   return data;
 }
 
-async function fetchOGImage(url) {
-  try {
-    const data = await fetchHtml(url, 4000);
-    const $ = cheerio.load(data);
-
-    const candidates = [
-      $('meta[property="og:image"]').attr('content'),
-      $('meta[name="twitter:image"]').attr('content'),
-      $('article img').first().attr('src'),
-      $('img').first().attr('src')
-    ];
-
-    const img = candidates.find(Boolean);
-    return toAbsoluteUrl(img, url) || placeholder;
-  } catch (err) {
-    console.warn(`⚠️ Failed image fetch for ${url}: ${err.message}`);
-    return placeholder;
-  }
-}
-
 async function fetchRssFeed(url, timeout = 7000) {
-  try {
-    const { data } = await axios.get(url, {
-      timeout,
-      headers: {
-        ...DEFAULT_HEADERS,
-        Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8'
-      },
-      responseType: 'text'
-    });
+  const { data } = await axios.get(url, {
+    timeout,
+    headers: {
+      ...DEFAULT_HEADERS,
+      Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8'
+    },
+    responseType: 'text'
+  });
 
-    return await parser.parseString(data);
-  } catch (err) {
-    return parser.parseURL(url);
-  }
+  return parser.parseString(data);
 }
 
 async function scrapeRssSource(config) {
@@ -314,28 +282,79 @@ function sortArticlesByDate(articles) {
   );
 }
 
-app.get('/api/scrape', async (req, res) => {
-  try {
+function isFeedCacheStale() {
+  if (!feedCache.updatedAt) return true;
+  return Date.now() - Date.parse(feedCache.updatedAt) >= FEED_REFRESH_INTERVAL_MS;
+}
+
+async function refreshFeedCache() {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
     const sourceResults = await Promise.all(SOURCE_CONFIGS.map(runSource));
+    const effectiveResults = sourceResults.map(result => {
+      if (result.ok) {
+        sourceArticleCache.set(result.key, result.articles);
+        return { ...result, stale: false };
+      }
+
+      const cachedArticles = sourceArticleCache.get(result.key) || [];
+
+      return {
+        ...result,
+        articles: cachedArticles,
+        stale: cachedArticles.length > 0
+      };
+    });
 
     const articles = sortArticlesByDate(
-      dedupeArticles(sourceResults.flatMap(result => result.articles))
+      dedupeArticles(effectiveResults.flatMap(result => result.articles))
     );
 
-    const health = sourceResults.map(result => ({
+    const health = effectiveResults.map(result => ({
       source: result.source,
       ok: result.ok,
+      stale: result.stale,
       count: result.articles.length
     }));
 
-    res.set('X-Feed-Health', JSON.stringify(health));
-    res.json(articles);
-  } catch (err) {
-    console.error('❌ API scrape error:', err.message);
-    res.status(500).json({ error: 'Scraping failed.' });
+    feedCache = {
+      articles,
+      health,
+      updatedAt: new Date().toISOString()
+    };
+
+    console.log(`⚡ Feed cache refreshed: ${articles.length} articles`);
+    return feedCache;
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+function triggerFeedRefresh() {
+  refreshFeedCache().catch(err => {
+    console.error('❌ Feed refresh error:', err.message);
+  });
+}
+
+app.get('/api/scrape', (req, res) => {
+  if (req.query.refresh === '1' || isFeedCacheStale()) {
+    triggerFeedRefresh();
   }
+
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Feed-Health', JSON.stringify(feedCache.health));
+  res.set('X-Feed-Refreshing', String(Boolean(refreshPromise)));
+  if (feedCache.updatedAt) {
+    res.set('X-Feed-Updated-At', feedCache.updatedAt);
+  }
+  res.json(feedCache.articles);
 });
 
 app.listen(port, () => {
   console.log(`🧠 Scraper running → http://localhost:${port}`);
+  triggerFeedRefresh();
+  setInterval(triggerFeedRefresh, FEED_REFRESH_INTERVAL_MS).unref();
 });
