@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const parser = new Parser();
+const parser = new Parser({ timeout: 7000 });
 const FEED_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const sourceArticleCache = new Map();
 let feedCache = {
@@ -161,16 +161,25 @@ async function fetchHtml(url, timeout = 7000) {
 }
 
 async function fetchRssFeed(url, timeout = 7000) {
-  const { data } = await axios.get(url, {
-    timeout,
-    headers: {
-      ...DEFAULT_HEADERS,
-      Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8'
-    },
-    responseType: 'text'
-  });
+  try {
+    const { data } = await axios.get(url, {
+      timeout,
+      headers: {
+        ...DEFAULT_HEADERS,
+        Accept: 'application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8'
+      },
+      responseType: 'text'
+    });
 
-  return parser.parseString(data);
+    if (!String(data || '').trim()) {
+      throw new Error('Empty RSS response.');
+    }
+
+    return await parser.parseString(data);
+  } catch (err) {
+    console.warn(`⚠️ RSS parser fallback for ${url}: ${err.message}`);
+    return parser.parseURL(url);
+  }
 }
 
 async function scrapeRssSource(config) {
