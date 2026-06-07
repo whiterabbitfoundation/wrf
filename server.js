@@ -42,20 +42,6 @@ const SOURCE_CONFIGS = [
     limit: 15
   },
   {
-    key: 'medium-conspiracy',
-    source: 'Medium Conspiracy',
-    type: 'rss',
-    url: 'https://medium.com/feed/tag/conspiracy',
-    limit: 10
-  },
-  {
-    key: 'medium-paranormal',
-    source: 'Medium Paranormal',
-    type: 'rss',
-    url: 'https://medium.com/feed/tag/paranormal',
-    limit: 10
-  },
-  {
     key: 'live-science',
     source: 'Live Science',
     type: 'rss',
